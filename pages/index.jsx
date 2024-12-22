@@ -1,4 +1,10 @@
-import { Menu, MenuButton, MenuItems, MenuItem, Transition } from '@headlessui/react'
+import {
+  Menu,
+  MenuButton,
+  MenuItems,
+  MenuItem,
+  Transition,
+} from '@headlessui/react'
 import { EllipsisVerticalIcon } from '@heroicons/react/24/outline'
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/solid'
 import {
@@ -7,6 +13,8 @@ import {
   endOfMonth,
   format,
   getDay,
+  isAfter,
+  isBefore,
   isEqual,
   isSameDay,
   isSameMonth,
@@ -15,49 +23,22 @@ import {
   parseISO,
   startOfToday,
 } from 'date-fns'
-import { Fragment, useState } from 'react'
+import { useEffect, useState } from 'react'
 
-const meetings = [
-  {
-    id: 1,
-    name: 'Leslie Alexander',
-    imageUrl:
-      'https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
-    startDatetime: '2024-12-11T13:00',
-    endDatetime: '2024-12-11T14:30',
-  },
-  {
-    id: 2,
-    name: 'Michael Foster',
-    imageUrl:
-      'https://images.unsplash.com/photo-1519244703995-f4e0f30006d5?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
-    startDatetime: '2024-12-20T09:00',
-    endDatetime: '2024-12-20T11:30',
-  },
-  {
-    id: 3,
-    name: 'Dries Vincent',
-    imageUrl:
-      'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
-    startDatetime: '2024-12-20T17:00',
-    endDatetime: '2024-12-20T18:30',
-  },
-  {
-    id: 4,
-    name: 'Leslie Alexander',
-    imageUrl:
-      'https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
-    startDatetime: '2024-12-09T13:00',
-    endDatetime: '2024-12-09T14:30',
-  },
-  {
-    id: 5,
-    name: 'Michael Foster',
-    imageUrl:
-      'https://images.unsplash.com/photo-1519244703995-f4e0f30006d5?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
-    startDatetime: '2024-12-13T14:00',
-    endDatetime: '2024-12-13T14:30',
-  },
+const timeSlots = [
+  '09:00 AM',
+  '09:30 AM',
+  '10:00 AM',
+  '10:30 AM',
+  // '11:00 AM',
+  // '11:30 AM',
+  // '12:00 PM',
+  // '12:30 PM',
+  // '13:00 PM',
+  // '13:30 PM',
+  // '14:00 PM',
+  // '14:30 PM',
+  // '15:00 PM',
 ]
 
 function classNames(...classes) {
@@ -67,7 +48,10 @@ function classNames(...classes) {
 export default function Example() {
   let today = startOfToday()
   let [selectedDay, setSelectedDay] = useState(today)
+  let [selectedTime, setSelectedTime] = useState('')
   let [currentMonth, setCurrentMonth] = useState(format(today, 'MMM-yyyy'))
+  const [database, setDatabase] = useState([])
+  const [availableSlots, setAvailableSlots] = useState([])
   let firstDayCurrentMonth = parse(currentMonth, 'MMM-yyyy', new Date())
 
   let days = eachDayOfInterval({
@@ -85,25 +69,55 @@ export default function Example() {
     setCurrentMonth(format(firstDayNextMonth, 'MMM-yyyy'))
   }
 
-  let selectedDayMeetings = meetings.filter((meeting) =>
-    isSameDay(parseISO(meeting.startDatetime), selectedDay)
-  )
+  function getUserTimezoneInfo() {
+    const tzid = Intl.DateTimeFormat().resolvedOptions().timeZone
+    const now = today
 
-  console.log(selectedDayMeetings)
+    // Get timezone abbreviation
+    const options = { timeZoneName: 'short' }
+    const formatter = new Intl.DateTimeFormat('en-US', options)
+    const timeZoneAbbreviation = formatter
+      .formatToParts(now)
+      .find((part) => part.type === 'timeZoneName')?.value
+
+    return { tzid, timeZoneAbbreviation }
+  }
+
+  const submit = () => {
+    setDatabase([
+      ...database,
+      {
+        date: selectedDay,
+        time: selectedTime,
+      },
+    ])
+  }
+
+  useEffect(() => {
+    const getAvailableSlots = () => {
+      const dd = database.filter((e) => isSameDay(e.date, selectedDay))
+      const tt = timeSlots.filter((slot) => {
+        return !dd.some((appt) => appt.time === slot)
+      })
+      setAvailableSlots(tt.length > 0 ? tt : [])
+    }
+
+    getAvailableSlots()
+  }, [selectedDay])
 
   return (
     <div className="pt-16">
-      <div className="max-w-md px-4 mx-auto sm:px-7 md:max-w-4xl md:px-6">
+      <div className="bg-white drop-shadow max-w-md p-8 mx-auto sm:px-7 md:max-w-4xl md:px-6">
         <div className="md:grid md:grid-cols-2 md:divide-x md:divide-gray-200">
           <div className="md:pr-14">
             <div className="flex items-center">
-              <h2 className="flex-auto font-semibold text-gray-900">
+              <h2 className="flex-auto font-normal text-gray-900">
                 {format(firstDayCurrentMonth, 'MMMM yyyy')}
               </h2>
               <button
                 type="button"
                 onClick={previousMonth}
-                className="-my-1.5 flex flex-none items-center justify-center p-1.5 text-gray-400 hover:text-gray-500"
+                className="-my-1.5 flex flex-none items-center justify-center p-1.5 text-black hover:text-gray-500"
               >
                 <span className="sr-only">Previous month</span>
                 <ChevronLeftIcon className="w-5 h-5" aria-hidden="true" />
@@ -111,13 +125,13 @@ export default function Example() {
               <button
                 onClick={nextMonth}
                 type="button"
-                className="-my-1.5 -mr-1.5 ml-2 flex flex-none items-center justify-center p-1.5 text-gray-400 hover:text-gray-500"
+                className="-my-1.5 -mr-1.5 ml-2 flex flex-none items-center justify-center p-1.5 text-black hover:text-gray-500"
               >
                 <span className="sr-only">Next month</span>
                 <ChevronRightIcon className="w-5 h-5" aria-hidden="true" />
               </button>
             </div>
-            <div className="grid grid-cols-7 mt-10 text-xs leading-6 text-center text-gray-500">
+            <div className="grid grid-cols-7 font-semibold mt-10 text-xl leading-6 text-center text-gray-800">
               <div>S</div>
               <div>M</div>
               <div>T</div>
@@ -126,73 +140,106 @@ export default function Example() {
               <div>F</div>
               <div>S</div>
             </div>
-            <div className="grid grid-cols-7 mt-2 text-sm">
-              {days.map((day, dayIdx) => (
-                <div
-                  key={day.toString()}
-                  className={classNames(
-                    dayIdx === 0 && colStartClasses[getDay(day)],
-                    'py-1.5'
-                  )}
-                >
-                  <button
-                    type="button"
-                    onClick={() => setSelectedDay(day)}
+            <div className="grid grid-cols-7 mt-2">
+              {days.map((day, dayIdx) => {
+                // Check if the day has available slots
+                const isDayDisabled = (() => {
+                  const dd = database.filter((e) => isSameDay(e.date, day))
+                  const available = timeSlots.filter((slot) => {
+                    return !dd.some((appt) => appt.time === slot)
+                  })
+                  return available.length === 0 // Disable if no slots available
+                })()
+
+                return (
+                  <div
+                    key={day.toString()}
                     className={classNames(
-                      isEqual(day, selectedDay) && 'text-white',
-                      !isEqual(day, selectedDay) &&
-                        isToday(day) &&
-                        'text-red-500',
-                      !isEqual(day, selectedDay) &&
-                        !isToday(day) &&
-                        isSameMonth(day, firstDayCurrentMonth) &&
-                        'text-gray-900',
-                      !isEqual(day, selectedDay) &&
-                        !isToday(day) &&
-                        !isSameMonth(day, firstDayCurrentMonth) &&
-                        'text-gray-400',
-                      isEqual(day, selectedDay) && isToday(day) && 'bg-red-500',
-                      isEqual(day, selectedDay) &&
-                        !isToday(day) &&
-                        'bg-gray-900',
-                      !isEqual(day, selectedDay) && 'hover:bg-gray-200',
-                      (isEqual(day, selectedDay) || isToday(day)) &&
-                        'font-semibold',
-                      'mx-auto flex h-8 w-8 items-center justify-center rounded-full'
+                      dayIdx === 0 && colStartClasses[getDay(day)],
+                      'py-1.5',
                     )}
                   >
-                    <time dateTime={format(day, 'yyyy-MM-dd')}>
-                      {format(day, 'd')}
-                    </time>
-                  </button>
-
-                  <div className="w-1 h-1 mx-auto mt-1">
-                    {meetings.some((meeting) =>
-                      isSameDay(parseISO(meeting.startDatetime), day)
-                    ) && (
-                      <div className="w-1 h-1 rounded-full bg-sky-500"></div>
-                    )}
+                    <button
+                      disabled={isBefore(day, today) || isDayDisabled}
+                      onClick={() => {
+                        setSelectedDay(day)
+                        setSelectedTime('')
+                      }}
+                      className={classNames(
+                        isEqual(day, selectedDay) && 'text-white',
+                        !isEqual(day, selectedDay) &&
+                          isToday(day) &&
+                          'text-red-500',
+                        !isEqual(day, selectedDay) &&
+                          !isToday(day) &&
+                          isSameMonth(day, firstDayCurrentMonth) &&
+                          'text-gray-900',
+                        !isEqual(day, selectedDay) &&
+                          !isToday(day) &&
+                          !isSameMonth(day, firstDayCurrentMonth) &&
+                          'text-gray-400',
+                        isEqual(day, selectedDay) && isToday(day) && 'bg-black',
+                        isEqual(day, selectedDay) &&
+                          !isToday(day) &&
+                          'bg-gray-900',
+                        !isEqual(day, selectedDay) &&
+                          isAfter(day, today) &&
+                          'hover:bg-gray-200',
+                        (isEqual(day, selectedDay) || isToday(day)) &&
+                          'font-semibold',
+                        isBefore(day, today) && 'text-gray-200',
+                        isDayDisabled && 'text-gray-200 hover:bg-white',
+                        'mx-auto flex h-12 w-12 text-xl font-normal items-center justify-center rounded-full',
+                      )}
+                    >
+                      <time
+                        className="flex items-center"
+                        dateTime={format(day, 'yyyy-MM-dd')}
+                      >
+                        {format(day, 'd')}
+                      </time>
+                    </button>
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </div>
           <section className="mt-12 md:mt-0 md:pl-14">
-            <h2 className="font-semibold text-gray-900">
-              Schedule for{' '}
+            <h2 className="text-gray-900">
               <time dateTime={format(selectedDay, 'yyyy-MM-dd')}>
-                {format(selectedDay, 'MMM dd, yyy')}
+                {format(selectedDay, 'MMMM dd, yyy')}{' '}
+                {selectedTime && `@ ${selectedTime}`}{' '}
+                {getUserTimezoneInfo().timeZoneAbbreviation.toUpperCase()}
               </time>
             </h2>
-            <ol className="mt-4 space-y-1 text-sm leading-6 text-gray-500">
-              {selectedDayMeetings.length > 0 ? (
-                selectedDayMeetings.map((meeting) => (
-                  <Meeting meeting={meeting} key={meeting.id} />
-                ))
-              ) : (
-                <p>No meetings for today.</p>
+            <p className="mt-2 space-y-1 text-xs leading-6 font-semibold text-black">
+              TIME ZONE: {getUserTimezoneInfo().tzid.toUpperCase()}{' '}
+              {getUserTimezoneInfo().timeZoneAbbreviation.toUpperCase()}
+            </p>
+            <div className="grid grid-cols-3 gap-4 mt-4 space-y-1 text-2xl leading-6 text-black">
+              {!selectedTime &&
+                availableSlots.map((time, i) => {
+                  return (
+                    <button
+                      onClick={() => setSelectedTime(time)}
+                      className="border py-3 hover:bg-gray-300"
+                      key={i}
+                    >
+                      {time}
+                    </button>
+                  )
+                })}
+            </div>
+            <div className="w-full">
+              {selectedTime && (
+                <button
+                  onClick={submit}
+                  className="bg-black text-white w-full mt-6 py-4"
+                >
+                  Book Appointment
+                </button>
               )}
-            </ol>
+            </div>
           </section>
         </div>
       </div>
@@ -203,8 +250,6 @@ export default function Example() {
 function Meeting({ meeting }) {
   let startDateTime = parseISO(meeting.startDatetime)
   let endDateTime = parseISO(meeting.endDatetime)
-
-  console.log(startDateTime, endDateTime)
 
   return (
     <li className="flex items-center px-4 py-2 space-x-4 group rounded-xl focus-within:bg-gray-100 hover:bg-gray-100">
