@@ -187,13 +187,12 @@ export default function Example() {
                           'hover:bg-gray-200',
                         (isEqual(day, selectedDay) || isToday(day)) &&
                           'font-semibold',
-                        isBefore(day, today) && 'text-gray-200',
-                        isDayDisabled && 'text-gray-200 hover:bg-white',
+                        isDayDisabled && 'hover:bg-white',
                         'mx-auto flex h-12 w-12 text-xl font-normal items-center justify-center rounded-full',
                       )}
                     >
                       <time
-                        className="flex items-center"
+                        className={`${isBefore(day, today) && 'text-gray-300'} flex items-center ${isDayDisabled && 'text-gray-200'}`}
                         dateTime={format(day, 'yyyy-MM-dd')}
                       >
                         {format(day, 'd')}
@@ -209,7 +208,8 @@ export default function Example() {
               <time dateTime={format(selectedDay, 'yyyy-MM-dd')}>
                 {format(selectedDay, 'MMMM dd, yyy')}{' '}
                 {selectedTime && `@ ${selectedTime}`}{' '}
-                {getUserTimezoneInfo().timeZoneAbbreviation.toUpperCase()}
+                {selectedTime &&
+                  getUserTimezoneInfo().timeZoneAbbreviation.toUpperCase()}
               </time>
             </h2>
             <p className="mt-2 space-y-1 text-xs leading-6 font-semibold text-black">
