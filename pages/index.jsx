@@ -24,21 +24,23 @@ import {
   startOfToday,
 } from 'date-fns'
 import { useEffect, useState } from 'react'
+import { DotLottieReact } from '@lottiefiles/dotlottie-react'
+
 
 const timeSlots = [
   '09:00 AM',
   '09:30 AM',
   '10:00 AM',
   '10:30 AM',
-  // '11:00 AM',
-  // '11:30 AM',
-  // '12:00 PM',
-  // '12:30 PM',
-  // '13:00 PM',
-  // '13:30 PM',
-  // '14:00 PM',
-  // '14:30 PM',
-  // '15:00 PM',
+  '11:00 AM',
+  '11:30 AM',
+  '12:00 PM',
+  '12:30 PM',
+  '13:00 PM',
+  '13:30 PM',
+  '14:00 PM',
+  '14:30 PM',
+  '15:00 PM',
 ]
 
 function classNames(...classes) {
@@ -51,6 +53,7 @@ export default function Example() {
   let [selectedTime, setSelectedTime] = useState('')
   let [currentMonth, setCurrentMonth] = useState(format(today, 'MMM-yyyy'))
   const [database, setDatabase] = useState([])
+  const [loading, setLoading] = useState(false)
   const [availableSlots, setAvailableSlots] = useState([])
   let firstDayCurrentMonth = parse(currentMonth, 'MMM-yyyy', new Date())
 
@@ -84,6 +87,7 @@ export default function Example() {
   }
 
   const submit = () => {
+    setLoading(true)
     setDatabase([
       ...database,
       {
@@ -91,6 +95,11 @@ export default function Example() {
         time: selectedTime,
       },
     ])
+    setTimeout(() => {
+      setLoading(false)
+      setSelectedTime('')
+      // setSelectedDay(selectedDay)
+    }, 2500)
   }
 
   useEffect(() => {
@@ -103,7 +112,7 @@ export default function Example() {
     }
 
     getAvailableSlots()
-  }, [selectedDay])
+  }, [selectedDay, selectedTime])
 
   return (
     <div className="pt-16">
@@ -233,10 +242,20 @@ export default function Example() {
             <div className="w-full">
               {selectedTime && (
                 <button
+                disabled={loading}
                   onClick={submit}
-                  className="bg-black text-white w-full mt-6 py-4"
+                  className="bg-black text-white flex justify-center w-full mt-6 py-4"
                 >
-                  Book Appointment
+                  {loading ? (
+                    <DotLottieReact
+                      className="w-20 h-auto"
+                      src="https://lottie.host/7bd62d72-99d3-4435-b015-0bbd4cee7057/YRCbFnkgEd.lottie"
+                      loop
+                      autoplay
+                    />
+                  ) : (
+                    <p>Book Appointment</p>
+                  )}
                 </button>
               )}
             </div>
@@ -244,85 +263,6 @@ export default function Example() {
         </div>
       </div>
     </div>
-  )
-}
-
-function Meeting({ meeting }) {
-  let startDateTime = parseISO(meeting.startDatetime)
-  let endDateTime = parseISO(meeting.endDatetime)
-
-  return (
-    <li className="flex items-center px-4 py-2 space-x-4 group rounded-xl focus-within:bg-gray-100 hover:bg-gray-100">
-      <img
-        src={meeting.imageUrl}
-        alt=""
-        className="flex-none w-10 h-10 rounded-full"
-      />
-      <div className="flex-auto">
-        <p className="text-gray-900">{meeting.name}</p>
-        <p className="mt-0.5">
-          <time dateTime={meeting.startDatetime}>
-            {format(startDateTime, 'h:mm a')}
-          </time>{' '}
-          -{' '}
-          <time dateTime={meeting.endDatetime}>
-            {format(endDateTime, 'h:mm a')}
-          </time>
-        </p>
-      </div>
-      <Menu
-        as="div"
-        className="relative opacity-0 focus-within:opacity-100 group-hover:opacity-100"
-      >
-        <div>
-          <MenuButton className="-m-2 flex items-center rounded-full p-1.5 text-gray-500 hover:text-gray-600">
-            <span className="sr-only">Open options</span>
-            <EllipsisVerticalIcon className="w-6 h-6" aria-hidden="true" />
-          </MenuButton>
-        </div>
-
-        <Transition
-          as={Fragment}
-          enter="transition ease-out duration-100"
-          enterFrom="transform opacity-0 scale-95"
-          enterTo="transform opacity-100 scale-100"
-          leave="transition ease-in duration-75"
-          leaveFrom="transform opacity-100 scale-100"
-          leaveTo="transform opacity-0 scale-95"
-        >
-          <MenuItems className="absolute right-0 z-10 mt-2 origin-top-right bg-white rounded-md shadow-lg w-36 ring-1 ring-black ring-opacity-5 focus:outline-none">
-            <div className="py-1">
-              <MenuItem>
-                {({ focus }) => (
-                  <a
-                    href="#"
-                    className={classNames(
-                      focus ? 'bg-gray-100 text-gray-900' : 'text-gray-700',
-                      'block px-4 py-2 text-sm',
-                    )}
-                  >
-                    Edit
-                  </a>
-                )}
-              </MenuItem>
-              <MenuItem>
-                {({ focus }) => (
-                  <a
-                    href="#"
-                    className={classNames(
-                      focus ? 'bg-gray-100 text-gray-900' : 'text-gray-700',
-                      'block px-4 py-2 text-sm',
-                    )}
-                  >
-                    Cancel
-                  </a>
-                )}
-              </MenuItem>
-            </div>
-          </MenuItems>
-        </Transition>
-      </Menu>
-    </li>
   )
 }
 
